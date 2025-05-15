@@ -24,7 +24,7 @@ def send_telegram_alert(message):
 # Load levels
 LEVELS = pd.read_csv("levels.csv")["price"].tolist()
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def index():
     return "Webhook server is running!"
 
