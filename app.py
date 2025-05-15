@@ -5,9 +5,6 @@ import requests
 import os
 
 app = Flask(__name__)
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # default to 5000 locally
-    app.run(host="0.0.0.0", port=port)
 
 # Telegram setup
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
@@ -56,3 +53,7 @@ def webhook():
         return jsonify({"status": "alert", "levels": triggered_levels})
     else:
         return jsonify({"status": "no match"})
+    
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))  # default to 5000 locally
+    app.run(host="0.0.0.0", port=port)
