@@ -4,6 +4,8 @@ import datetime
 import requests
 import os
 import json
+from dateutil import parser
+import pytz
 
 app = Flask(__name__)
 
@@ -31,16 +33,26 @@ def webhook():
     try:
         # Read raw body
         raw_data = request.data.decode("utf-8")
+        print("🔍 Headers:", dict(request.headers))
         print("📦 Raw webhook data:", raw_data)
-
+        
         # Parse manually
         data = json.loads(raw_data)
         print("📩 Parsed JSON:", data)
 
         open_price = float(data.get("open"))
         close_price = float(data.get("close"))
-        candle_time = datetime.datetime.fromtimestamp(int(data.get("time")) / 1000)
-
+        candle_time = parser.isoparse(data["time"])
+        
+        # Convert to Romania time
+        bucharest_tz = pytz.timezone("Europe/Bucharest")
+        candle_time_bucharest = candle_time.astimezone(bucharest_tz)
+        
+        # Only allow Mon–Fri, 07:00–19:00
+        if not (0 <= candle_time_bucharest.weekday() <= 4 and 7 <= candle_time_bucharest.hour < 19):
+            print("⏳ Ignored — Outside allowed time window.")
+            return jsonify({"status": "ignored", "reason": "outside active hours"})
+        
         if close_price <= open_price:
             return jsonify({"status": "ignored", "reason": "not bullish"})
 
@@ -52,7 +64,7 @@ def webhook():
                 triggered_levels.append(level)
 
         if triggered_levels:
-            msg = f"🔔 {candle_time} — Bullish candle triggered above: {triggered_levels}"
+            msg = f"🔔 {candle_time_bucharest} — Bullish candle triggered above: {triggered_levels}"
             print(msg)
             send_telegram_alert(msg)
             return jsonify({"status": "alert", "levels": triggered_levels})
@@ -63,7 +75,10 @@ def webhook():
         print(f"❌ Failed to process webhook: {e}")
         return jsonify({"error": "bad request", "detail": str(e)}), 400
 
-    
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))  # default to 5000 locally
     app.run(host="0.0.0.0", port=port)
+
+#just to run locally    
+#if __name__ == "__main__":
+#    app.run(host="0.0.0.0", port=10000, debug=True)
