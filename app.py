@@ -27,8 +27,16 @@ def index():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.get_json()
-    print("📩 Received alert:", data) 
+    try:
+        if request.is_json:
+            data = request.get_json()
+        else:
+            # Force manual JSON parse from raw data
+            import json
+            data = json.loads(request.data)
+    except Exception as e:
+        return jsonify({"error": "Invalid payload", "detail": str(e)}), 400
+    
     try:
         open_price = float(data.get("open"))
         close_price = float(data.get("close"))
