@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: tradingview-webhook-server
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+
+cronJobs:
+  # START every weekday at 07:00 UTC
+  - name: wake-up
+    schedule: "0 7 * * 1-5"
+    command: curl https://tradingview-webhook-server.onrender.com
+
+  # STOP every weekday at 19:01 UTC
+  - name: shutdown
+    schedule: "1 19 * * 1-5"
+    command: curl -X POST https://api.render.com/v1/services/SERVICE_ID/scale \
+             -H "Authorization: Bearer YOUR_API_KEY" \
+             -H "Content-Type: application/json" \
+             -d '{"numInstances": 0}'
