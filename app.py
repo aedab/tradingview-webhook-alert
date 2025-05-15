@@ -28,39 +28,40 @@ def index():
 @app.route("/webhook", methods=["POST"])
 def webhook():
     try:
-        if request.is_json:
-            data = request.get_json()
-        else:
-            # Force manual JSON parse from raw data
-            import json
-            data = json.loads(request.data)
-    except Exception as e:
-        return jsonify({"error": "Invalid payload", "detail": str(e)}), 400
-    
-    try:
+        # Read raw body
+        raw_data = request.data.decode("utf-8")
+        print("📦 Raw webhook data:", raw_data)
+
+        # Parse manually
+        data = json.loads(raw_data)
+        print("📩 Parsed JSON:", data)
+
         open_price = float(data.get("open"))
         close_price = float(data.get("close"))
         candle_time = datetime.datetime.fromtimestamp(int(data.get("time")) / 1000)
+
+        if close_price <= open_price:
+            return jsonify({"status": "ignored", "reason": "not bullish"})
+
+        body_size = abs(close_price - open_price)
+        triggered_levels = []
+
+        for level in LEVELS:
+            if open_price > level and (open_price - level) >= 0.5 * body_size:
+                triggered_levels.append(level)
+
+        if triggered_levels:
+            msg = f"🔔 {candle_time} — Bullish candle triggered above: {triggered_levels}"
+            print(msg)
+            send_telegram_alert(msg)
+            return jsonify({"status": "alert", "levels": triggered_levels})
+        else:
+            return jsonify({"status": "no match"})
+
     except Exception as e:
-        return jsonify({"error": "Invalid payload", "detail": str(e)}), 400
+        print(f"❌ Failed to process webhook: {e}")
+        return jsonify({"error": "bad request", "detail": str(e)}), 400
 
-    if close_price <= open_price:
-        return jsonify({"status": "ignored", "reason": "not bullish"})
-
-    body_size = abs(close_price - open_price)
-    triggered_levels = []
-
-    for level in LEVELS:
-        if open_price > level and (open_price - level) >= 0.5 * body_size:
-            triggered_levels.append(level)
-
-    if triggered_levels:
-        msg = f"🔔 {candle_time} — Bullish candle triggered above: {triggered_levels}"
-        print(msg)
-        send_telegram_alert(msg)
-        return jsonify({"status": "alert", "levels": triggered_levels})
-    else:
-        return jsonify({"status": "no match"})
     
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))  # default to 5000 locally
