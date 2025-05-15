@@ -31,6 +31,7 @@ def index():
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
+    print("📩 Received alert:", data) 
     try:
         open_price = float(data.get("open"))
         close_price = float(data.get("close"))
