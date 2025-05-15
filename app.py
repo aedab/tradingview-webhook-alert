@@ -33,12 +33,12 @@ def webhook():
     try:
         # Read raw body
         raw_data = request.data.decode("utf-8")
-        print("🔍 Headers:", dict(request.headers))
-        print("📦 Raw webhook data:", raw_data)
+#        print("🔍 Headers:", dict(request.headers))
+#        print("📦 Raw webhook data:", raw_data)
         
         # Parse manually
         data = json.loads(raw_data)
-        print("📩 Parsed JSON:", data)
+#        print("📩 Parsed JSON:", data)
 
         open_price = float(data.get("open"))
         close_price = float(data.get("close"))
