@@ -60,14 +60,16 @@ def webhook():
         triggered_levels = []
 
         for level in LEVELS:
-            if open_price > level and (open_price - level) >= 0.5 * body_size:
-                triggered_levels.append(level)
+            if open_price <= level < close_price:
+                portion_above = close_price - level
+                if portion_above >= 0.5 * body_size:
+                    triggered_levels.append(level)
 
         if triggered_levels:
             msg = f"🔔 {candle_time_bucharest} — Bullish candle triggered above: {triggered_levels}"
             print(msg)
             send_telegram_alert(msg)
-            return jsonify({"status": "alert", "levels": triggered_levels})
+            return jsonify({"status": "alert", "level": triggered_levels[0]})
         else:
             return jsonify({"status": "no match"})
 
