@@ -58,6 +58,7 @@ def webhook():
 
         body_size = abs(close_price - open_price)
         triggered_levels = []
+        percentage_above = 0
 
         for level in LEVELS:
             if open_price <= level < close_price:
